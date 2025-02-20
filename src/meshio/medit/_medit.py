@@ -174,15 +174,30 @@ def read_ascii_buffer(f):
     point_data = {}
     cell_data = {"medit:ref": []}
 
+    # meshio_from_medit = {
+    #     "Edges": ("line", 2),
+    #     "Triangles": ("triangle", 3),
+    #     "Quadrilaterals": ("quad", 4),
+    #     "Tetrahedra": ("tetra", 4),
+    #     "Prisms": ("wedge", 6),
+    #     "Pyramids": ("pyramid", 5),
+    #     "Hexahedra": ("hexahedron", 8),  # Frey
+    #     "Hexaedra": ("hexahedron", 8),  # Dobrzynski
+    # }
     meshio_from_medit = {
-        "Edges": ("line", 2),
-        "Triangles": ("triangle", 3),
-        "Quadrilaterals": ("quad", 4),
-        "Tetrahedra": ("tetra", 4),
-        "Prisms": ("wedge", 6),
-        "Pyramids": ("pyramid", 5),
-        "Hexahedra": ("hexahedron", 8),  # Frey
-        "Hexaedra": ("hexahedron", 8),  # Dobrzynski
+        # 'Corners': ('vertex', 0),
+        'Edges': ('line', 2),
+        'EdgesP2': ('line3', 3),
+        'Triangles': ('triangle', 3),
+        'TrianglesP2': ('triangle6', 6),
+        'Quadrilaterals': ('quad', 4),
+        'QuadrilateralsQ2': ('quad9', 9),
+        'Tetrahedra': ('tetra', 4),
+        'TetrahedraP2': ('tetra10', 10),
+        'Prisms': ('wedge', 6),
+        'Pyramids': ('pyramid', 5),
+        'Hexahedra': ('hexahedron', 8),
+        'HexahedraQ2': ('hexahedron27', 27)
     }
     points = None
     dtype = None
@@ -199,12 +214,12 @@ def read_ascii_buffer(f):
 
         items = line.split()
 
-        if not items[0].isalpha():
+        if (not items[0].isalpha()) and (items[0] not in meshio_from_medit.keys()):
             raise ReadError()
 
         if items[0] == "MeshVersionFormatted":
             version = items[1]
-            dtype = {"0": c_float, "1": c_float, "2": c_double}[version]
+            dtype = {"0": c_float, "1": c_float, "2": c_double, "3": c_double}[version]
         elif items[0] == "Dimension":
             if len(items) >= 2:
                 dim = int(items[1])
@@ -257,6 +272,12 @@ def read_ascii_buffer(f):
             np.fromfile(
                 f, count=num_sub_domain_from_mesh * 4, dtype=int, sep=" "
             ).reshape(num_sub_domain_from_mesh, 4)
+        elif items[0] == "SubDomainFromGeom":
+            # those are just discarded
+            num_sub_domain_from_geom = int(f.readline())
+            np.fromfile(
+                f, count=num_sub_domain_from_geom * 4, dtype=int, sep=" "
+            ).reshape(num_sub_domain_from_geom, 4)            
         elif items[0] == "VertexOnGeometricVertex":
             # those are just discarded
             num_vertex_on_geometric_vertex = int(f.readline())
@@ -289,7 +310,7 @@ def read_ascii_buffer(f):
             for _ in range(num_to_pass):
                 f.readline()
         else:
-            if items[0] != "End":
+            if items[0] not in ("End", "END"):
                 raise ReadError(f"Unknown keyword '{items[0]}'.")
 
     if points is None:
@@ -302,7 +323,6 @@ def write(filename, mesh, float_fmt=".16e"):
         write_binary_file(filename, mesh)
     else:
         write_ascii_file(filename, mesh, float_fmt)
-
 
 def write_ascii_file(filename, mesh, float_fmt=".16e"):
     with open_file(filename, "wb") as fh:
@@ -331,16 +351,30 @@ def write_ascii_file(filename, mesh, float_fmt=".16e"):
         fmt = " ".join(["{:" + float_fmt + "}"] * d) + " {:d}\n"
         for x, label in zip(mesh.points, labels):
             fh.write(fmt.format(*x, label).encode())
-
+            
         medit_from_meshio = {
+            "vertex": ("Corners", 0),
             "line": ("Edges", 2),
+            "line3": ("EdgesP2", 3),
+            # "line4": ("EdgesP3", 4), # not on meshio? but on medit!
             "triangle": ("Triangles", 3),
+            "triangle6": ("TrianglesP2", 6),
+            # "triangle10": ("TrianglesP3", 10), # not on meshio? but on medit!
             "quad": ("Quadrilaterals", 4),
+            # "quad8": ("_____", 8), # on meshio! but not on medit!
+            "quad9": ("QuadrilateralsQ2", 9),
             "tetra": ("Tetrahedra", 4),
+            "tetra10": ("TetrahedraP2", 10),
             "wedge": ("Prisms", 6),
+            # "wedge15": ("_____", 15), # on meshio! but not on medit!
+            # "wedge18": ("PrismsP2", 18), # not on meshio! but on medit!
             "pyramid": ("Pyramids", 5),
             "hexahedron": ("Hexahedra", 8),
+            # "hexahedron20": ("_____", 20), # on meshio! but not on medit!
+            "hexahedron27": ("HexahedraQ2", 27),
         }
+        # inverse = {value[0]: (key, value[1]) for key, value in medit_from_meshio.items()}
+        # print(inverse)
 
         # pick out cell_data
         labels_key, other = _pick_first_int_data(mesh.cell_data)
@@ -466,17 +500,30 @@ def write_binary_file(f, mesh):
 
         # first component is medit keyword id see _medit_internal.py
         medit_from_meshio = {
-            "line": 5,
-            "triangle": 6,
-            "quad": 7,
-            "tetra": 8,
-            "wedge": 9,
-            "pyramid": 49,
-            "hexahedron": 10,
+            "vertex": ("GmfCorners", 13),
+            "line": ("GmfEdges", 5),
+            "line3": ("GmfEdgesP2", 25),
+            # "line4": 92, # not on meshio!
+            # "line5": 93, # not on meshio!
+            "triangle": ("GmfTriangles", 6),
+            "triangle6": ("GmfTrianglesP2", 24),
+            # "triangle10": 90, # not on meshio!
+            "quad": ("GmfQuadrilaterals", 7),
+            # "quad8": __, # not on medit!
+            "quad9": ("GmfQuadrilateralsQ2", 27),
+            "tetra": ("GmfTetrahedra", 8),
+            "tetra10": ("GmfTetrahedraP2", 30),
+            "wedge": ("GmfPrisms", 9),
+            # "wedge15": __, # not on medit!
+            "pyramid": ("GmfPyramids", 49),
+            "hexahedron": ("GmfHexahedra", 10),
+            # "hexahedron20": __, # not on medit!
+            "hexahedron27": ("GmfHexahedraQ2", 33),
         }
+
         for k, cell_block in enumerate(mesh.cells):
             try:
-                medit_key = medit_from_meshio[cell_block.type]
+                medit_key = medit_from_meshio[cell_block.type][1]
             except KeyError:
                 warn(
                     f"MEDIT's mesh format doesn't know {cell_block.type} cells. "
