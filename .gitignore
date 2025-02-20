@@ -24,3 +24,27 @@ doc/_build/
 .tox/
 foo.vtk
 .vscode/
+
+*.pdf
+
+# latex
+*.aux
+*.bbl*
+*.bcf*
+*.blg
+*.fdb*
+*.fls
+*.log
+*.nav
+*.out
+*.snm
+*.synctex*
+*.toc
+*.xml
+*.gz
+*.maf
+*.mtc*
+*.thm
+*.lof
+*.lot
+*.brf
