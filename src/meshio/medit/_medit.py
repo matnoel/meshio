@@ -18,25 +18,27 @@ from ._medit_internal import medit_codes
 
 
 # see _medit_internal.py fpr tags
+# see https://pyamg.saclay.inria.fr/download/vizir/vizir4_user_guide.pdf for vizir
 dict_meshio: dict[str, tuple[str, int, int]] = {
     # meshio: (medit, nPe, tag)
     "point": ("Vertices", 0, 4),
     # "vertex": ("Corners", 0, 13), # DOT NOT UNCOMMENT
     "line": ("Edges", 2, 5),
-    "line3": ("EdgesP2", 3, 25),
-    # _: ("EdgesP3", 4, 92), # not on meshio! but on medit!
-    # _: ("EdgesP4", 5, 93), # not on meshio! but on medit!
+    "line3": ("EdgesP2", 3, 25),    
+    "line4": ("EdgesP3", 4, 92), # not on meshio! but on medit!
+    "line5": ("EdgesP4", 5, 93), # not on meshio! but on medit!
     "triangle": ("Triangles", 3, 6),
     "triangle6": ("TrianglesP2", 6, 24),
-    # _: ("TrianglesP3", 10, 90), # not on meshio! but on medit!
+    "triangle10": ("TrianglesP3", 10, 90), # not on meshio! but on medit!
+    "triangle15": ("TrianglesP4", 15, 91), # not on meshio! but on medit!
     "quad": ("Quadrilaterals", 4, 7),
     # "quad8": (_, 8, _), # on meshio! but not on medit!
     "quad9": ("QuadrilateralsQ2", 9, 27),
     "tetra": ("Tetrahedra", 4, 8),
     "tetra10": ("TetrahedraP2", 10, 30),
     "wedge": ("Prisms", 6, 9),
-    # "wedge15": (_, 15, _), # on meshio! but not on medit!
-    # _: ("PrismsP2", 18, 86), # not on meshio! but on medit!
+    # "wedge15": (_, 15, _), # on meshio! but not on medit!    
+    "wedge18": ("PrismsP2", 18, 86), # not on meshio! but on medit!
     "pyramid": ("Pyramids", 5, 49),
     "hexahedron": ("Hexahedra", 8, 10),
     # "hexahedron20": (_, 20, _), # on meshio! but not on medit!
