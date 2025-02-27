@@ -20,13 +20,13 @@ from ._medit_internal import medit_codes
 # see _medit_internal.py fpr tags
 # see https://pyamg.saclay.inria.fr/download/vizir/vizir4_user_guide.pdf for vizir
 dict_meshio: dict[str, tuple[str, int, int]] = {
-    # meshio: (medit, nPe, tag)
+    # meshio: (medit, nodes_per_elements, tag in medit_codes from _medit_internal.py)
     "point": ("Vertices", 0, 4),
     # "vertex": ("Corners", 0, 13), # DOT NOT UNCOMMENT
     "line": ("Edges", 2, 5),
     "line3": ("EdgesP2", 3, 25),    
-    "line4": ("EdgesP3", 4, 92), # not on meshio! but on medit!
-    "line5": ("EdgesP4", 5, 93), # not on meshio! but on medit!
+    "line4": ("EdgesP3", 4, 92),
+    "line5": ("EdgesP4", 5, 93),
     "triangle": ("Triangles", 3, 6),
     "triangle6": ("TrianglesP2", 6, 24),
     "triangle10": ("TrianglesP3", 10, 90), # not on meshio! but on medit!
@@ -42,7 +42,7 @@ dict_meshio: dict[str, tuple[str, int, int]] = {
     "pyramid": ("Pyramids", 5, 49),
     "hexahedron": ("Hexahedra", 8, 10),
     # "hexahedron20": (_, 20, _), # on meshio! but not on medit!
-    "hexahedron27": ("HexahedraQ2", 27, 33),
+    "hexahedron27": ("HexahedraQ2", 27, 33)
 }
 """meshio: (medit, nPe, tag)"""
 
