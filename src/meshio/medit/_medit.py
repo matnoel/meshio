@@ -19,6 +19,7 @@ from ._medit_internal import medit_codes
 DICT_MESHIO: dict[str, tuple[str, int, int]] = {
     # "vertex": ("Corners", 0, 13), # DOT NOT UNCOMMENT
     # wrong data for GmfCorners in medit_codes?
+    "point": ("Vertices", 0, 4),
     "line": ("Edges", 2, 5),
     "line3": ("EdgesP2", 3, 25),    
     "line4": ("EdgesP3", 4, 92),
