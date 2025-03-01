@@ -16,11 +16,9 @@ from .._helpers import register_format
 from .._mesh import Mesh
 from ._medit_internal import medit_codes
 
-dict_meshio: dict[str, tuple[str, int, int]] = {
-    # meshio: (medit, nodes_per_elements, tag in medit_codes from _medit_internal.py)
-    "point": ("Vertices", 0, 4),
+DICT_MESHIO: dict[str, tuple[str, int, int]] = {
     # "vertex": ("Corners", 0, 13), # DOT NOT UNCOMMENT
-    # MEDIT's mesh format doesn't know vertex cells.
+    # wrong data for GmfCorners in medit_codes?
     "line": ("Edges", 2, 5),
     "line3": ("EdgesP2", 3, 25),    
     "line4": ("EdgesP3", 4, 92),
@@ -46,16 +44,16 @@ dict_meshio: dict[str, tuple[str, int, int]] = {
 """meshio: (medit, nodes_per_elements, tag)"""
 # see _medit_internal.py for tags
 
-dict_medit: dict[str, tuple[str, int, int]] = {}
+DICT_MEDIT: dict[str, tuple[str, int, int]] = {}
 """medit: (meshio, nodes_per_elements, tag)"""
 
-dict_GmfMedit: dict[str, tuple[str, int, int]] = {}
+DICT_GMFMEDIT: dict[str, tuple[str, int, int]] = {}
 """GmfMedit: (meshio, nodes_per_elements, tag)"""
 
-for key, value in dict_meshio.items():
+for key, value in DICT_MESHIO.items():
     medit, nPe, tag = value
-    dict_medit[medit] = (key, nPe, tag)
-    dict_GmfMedit["Gmf"+medit] = (key, nPe, tag)
+    DICT_MEDIT[medit] = (key, nPe, tag)
+    DICT_GMFMEDIT["Gmf"+medit] = (key, nPe, tag)
 
 def read(filename):
     with open_file(filename) as f:
@@ -179,7 +177,7 @@ def read_binary_buffer(f):
         field_template = field_code[2]
         dtype = np.dtype(_produce_dtype(field_template, dim, itype, ftype))
         out = np.asarray(np.fromfile(f, count=nitems, dtype=dtype))
-        if field_code[0] not in dict_GmfMedit.keys():
+        if field_code[0] not in DICT_GMFMEDIT.keys():
             warn(f"meshio doesn't know {field_code[0]} type. Skipping.")
             continue        
 
@@ -187,7 +185,7 @@ def read_binary_buffer(f):
             points = out["f0"]
             point_data["medit:ref"] = out["f1"]
         else:
-            meshio_type, ncols, _ = dict_GmfMedit[field_code[0]]
+            meshio_type, ncols, _ = DICT_GMFMEDIT[field_code[0]]
             # transform the structured array to integer array which suffices
             # for the cell connectivity
             out_view = out.view(itype).reshape(nitems, ncols + 1)
@@ -218,7 +216,7 @@ def read_ascii_buffer(f):
 
         items = line.split()
 
-        if (not items[0].isalpha()) and (items[0] not in dict_medit.keys()):
+        if (not items[0].isalpha()) and (items[0] not in DICT_MEDIT.keys()):
             raise ReadError()
 
         if items[0] == "MeshVersionFormatted":
@@ -242,8 +240,8 @@ def read_ascii_buffer(f):
             ).reshape(num_verts, dim + 1)
             points = out[:, :dim]
             point_data["medit:ref"] = out[:, dim].astype(int)
-        elif items[0] in dict_medit:
-            meshio_type, points_per_cell, _ = dict_medit[items[0]]
+        elif items[0] in DICT_MEDIT:
+            meshio_type, points_per_cell, _ = DICT_MEDIT[items[0]]
             # The first value is the number of elements
             num_cells = int(f.readline())
 
@@ -369,7 +367,7 @@ def write_ascii_file(filename, mesh, float_fmt=".16e"):
             cell_type = cell_block.type
             data = cell_block.data
             try:
-                medit_name, num, _ = dict_meshio[cell_type]
+                medit_name, num, _ = DICT_MESHIO[cell_type]
             except KeyError:
                 msg = f"MEDIT's mesh format doesn't know {cell_type} cells. Skipping."
                 warn(msg)
@@ -480,7 +478,7 @@ def write_binary_file(f, mesh):
 
         for k, cell_block in enumerate(mesh.cells):
             try:
-                _, _, medit_key = dict_meshio[cell_block.type]
+                _, _, medit_key = DICT_MESHIO[cell_block.type]
             except KeyError:
                 warn(
                     f"MEDIT's mesh format doesn't know {cell_block.type} cells. "
