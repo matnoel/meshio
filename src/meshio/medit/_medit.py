@@ -38,7 +38,6 @@ DICT_MESHIO: dict[str, tuple[str, int, int]] = {
     "wedge18": ("PrismsP2", 18, 86),
     "pyramid": ("Pyramids", 5, 49),
     "hexahedron": ("Hexahedra", 8, 10), # Frey
-    "hexahedron": ("Hexaedra", 8, 10), # Dobrzynski ?
     # "hexahedron20": (_, 20, _), # not on medit!
     "hexahedron27": ("HexahedraQ2", 27, 33)
 }
@@ -55,6 +54,10 @@ for key, value in DICT_MESHIO.items():
     medit, nPe, tag = value
     DICT_MEDIT[medit] = (key, nPe, tag)
     DICT_GMFMEDIT["Gmf"+medit] = (key, nPe, tag)
+
+# add Dobrzynski case
+DICT_MEDIT["Hexaedra"] = ("hexahedron", 8, 10)
+DICT_GMFMEDIT["GmfHexaedra"] = ("hexahedron", 8, 10)
 
 def read(filename):
     with open_file(filename) as f:
