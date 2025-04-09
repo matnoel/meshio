@@ -67,7 +67,6 @@ def read(filename):
             mesh = read_ascii_buffer(f)
     return mesh
 
-
 def _produce_dtype(string_type, dim, itype, ftype):
     """
     convert a medit_code to a dtype appropriate for building a numpy array
@@ -91,6 +90,31 @@ def _produce_dtype(string_type, dim, itype, ftype):
             res += ","
     return res
 
+_medit_to_meshio = {
+    "hexahedron27": [
+        *list(range(20)), 25, 23, 22, 24, 20, 21, 26
+    ]
+}
+
+_meshio_to_medit = {cell_type: [order.index(i) for i in range(len(order))]
+                    for cell_type, order in _medit_to_meshio.items()}
+
+def _convert_cell_data(cell_type: str, data, dict_convert: dict[str, list[int]]) -> np.ndarray:
+
+    if cell_type in dict_convert.keys():            
+        idx = dict_convert[cell_type]
+        data = data[:, idx]
+
+    return data
+
+def _convert_cells(cells: list[tuple[str, np.ndarray]], dict_convert: dict[str, list[int]]):
+
+    for i, cell in enumerate(cells):
+        cell_type, data = cell
+        data = _convert_cell_data(cell_type, data, dict_convert)
+        cells[i] = (cell_type, data)
+
+    return cells
 
 def read_binary_buffer(f):
 
@@ -195,6 +219,8 @@ def read_binary_buffer(f):
             out_view = out.view(itype).reshape(nitems, ncols + 1)
             cells.append((meshio_type, out_view[:, :ncols] - 1))
             cell_data["medit:ref"].append(out_view[:, -1])
+    
+    cells = _convert_cells(cells, _medit_to_meshio)
 
     return Mesh(points, cells, point_data=point_data, cell_data=cell_data)
 
@@ -321,6 +347,9 @@ def read_ascii_buffer(f):
 
     if points is None:
         raise ReadError("Expected `Vertices`")
+    
+    cells = _convert_cells(cells, _medit_to_meshio)
+
     return Mesh(points, cells, point_data=point_data, cell_data=cell_data)
 
 
@@ -368,8 +397,11 @@ def write_ascii_file(filename, mesh, float_fmt=".16e"):
             )
 
         for k, cell_block in enumerate(mesh.cells):
+
             cell_type = cell_block.type
             data = cell_block.data
+            data = _convert_cell_data(cell_type, data, _meshio_to_medit)
+
             try:
                 medit_name, num, _ = DICT_MESHIO[cell_type]
             except KeyError:
@@ -481,6 +513,11 @@ def write_binary_file(f, mesh):
             )
 
         for k, cell_block in enumerate(mesh.cells):
+            
+            # reorder data
+            cell_block.data = _convert_cell_data(
+                cell_block.type, cell_block.data, _meshio_to_medit)
+
             try:
                 _, _, medit_key = DICT_MESHIO[cell_block.type]
             except KeyError:
